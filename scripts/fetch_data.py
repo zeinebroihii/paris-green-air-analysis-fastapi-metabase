@@ -1,87 +1,227 @@
 import requests
 import pandas as pd
-from bs4 import BeautifulSoup
+import time
+import os
+import logging
+from concurrent.futures import ThreadPoolExecutor
+import json
 import io
-import time  # For rate limiting best practice
 
-# Mini-algo: API fetch with pagination and error fallback
-def fetch_from_paris_api(dataset, rows=10000, delay=1):
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Ensure data directory exists
+os.makedirs('data', exist_ok=True)
+
+# Cache file for les-arbres progress
+CACHE_FILE = 'data/les_arbres_progress.json'
+
+# Single chunk fetch via API
+def fetch_chunk(dataset, start, rows, session):
     url = "https://opendata.paris.fr/api/records/1.0/search/"
-    params = {"dataset": dataset, "rows": rows, "start": 0}
-    all_records = []
-    while True:
-        try:
-            response = requests.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            data = response.json()
-            all_records.extend(data['records'])
-            if len(data['records']) < rows:
-                break
-            params['start'] += rows
-            time.sleep(delay)  # Best practice: Avoid rate limits
-        except Exception as e:
-            print(f"API error for {dataset}: {e}. Falling back to scraping.")
-            return scrape_paris_csv(dataset)
-    df = pd.json_normalize(all_records)
-    return df
-
-# Mini-algo: Scraping fallback - Download CSV from export page
-def scrape_paris_csv(dataset):
+    params = {"dataset": dataset, "rows": rows, "start": start}
     try:
-        export_url = f"https://opendata.paris.fr/explore/dataset/{dataset}/export/"
-        response = requests.get(export_url, timeout=30)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        csv_link = [a['href'] for a in soup.find_all('a', href=True) if 'csv' in a['href']][0]
-        csv_response = requests.get(csv_link, timeout=30)
-        csv_response.raise_for_status()
-        # Parse CSV (Paris uses semicolon separator)
-        df = pd.read_csv(io.StringIO(csv_response.text), sep=';')
-        print(f"Scraped {len(df)} records for {dataset}.")
-        return df
-    except Exception as e:
-        raise ValueError(f"Scraping failed for {dataset}: {e}")
-
-# Dataset-specific fetches (API primary)
-def fetch_trees():
-    df = fetch_from_paris_api("les-arbres")
-    df.to_csv('data/raw_trees.csv', index=False)
-    return df
-
-def fetch_green_spaces():
-    df = fetch_from_paris_api("espaces-verts-et-assimiles")  # Exact slug from list
-    df.to_csv('data/raw_green_spaces.csv', index=False)
-    return df
-
-def fetch_air_quality():
-    df = fetch_from_paris_api("qualite-de-lair-concentration-moyenne-no2-pm2-5-pm10-o3-a-partir-de-2015")
-    df.to_csv('data/raw_air_quality.csv', index=False)
-    return df
-
-def fetch_cooling_spaces():
-    df = fetch_from_paris_api("ilots-de-fraicheur-espaces-verts-frais")
-    df.to_csv('data/raw_cooling_spaces.csv', index=False)
-    return df
-
-def fetch_arrondissements():
-    df = fetch_from_paris_api("arrondissements")
-    df.to_csv('data/raw_arrondissements.csv', index=False)
-    return df
-
-# Airparif (complementary API; scraping fallback not needed as it's REST)
-def fetch_airparif_measurements(year=2025):
-    url = "https://services9.arcgis.com/7Sr9EkvgbJsCyFVQ/arcgis/rest/services/indice_atmo_agglo_paris/FeatureServer/0/query"
-    params = {"where": f"date_ech >= '{year}-01-01'", "outFields": "*", "f": "geojson", "returnGeometry": "true"}
-    try:
-        response = requests.get(url, params=params, timeout=30)
+        response = session.get(url, params=params, timeout=30)
         response.raise_for_status()
         data = response.json()
-        df = pd.json_normalize([f['properties'] for f in data['features']])
+        records = data['records']
+        logger.info(f"Fetched {len(records)} records for {dataset} at start={start}")
+        return records, None
     except Exception as e:
-        print(f"Airparif error: {e}. Use manual download.")
-        df = pd.DataFrame()
-    df.to_csv('data/raw_airparif_measurements.csv', index=False)
+        logger.error(f"Chunk failed for {dataset} at start={start}: {e} - {response.text if 'response' in locals() else 'No response'}")
+        return [], str(e)
+
+# Fetch full dataset via CSV download
+def fetch_csv_download(dataset, save_as):
+    csv_url = f"https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/{dataset}/exports/csv?lang=fr&timezone=Europe%2FParis"
+    try:
+        response = requests.get(csv_url, timeout=60)
+        response.raise_for_status()
+        df = pd.read_csv(io.StringIO(response.text), sep=';')
+        df.to_csv(save_as, index=False)
+        logger.info(f"Fetched {len(df)} records for {dataset} via CSV download to {save_as}")
+        if os.path.exists(CACHE_FILE):
+            os.remove(CACHE_FILE)
+            logger.info(f"Deleted {CACHE_FILE}")
+        return df
+    except Exception as e:
+        logger.error(f"CSV download failed for {dataset}: {e}")
+        return pd.DataFrame()
+
+# General API fetch helper
+def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=False):
+    url = "https://opendata.paris.fr/api/records/1.0/search/"
+    session = requests.Session()
+    params = {"dataset": dataset, "rows": 0, "start": 0}
+    try:
+        response = session.get(url, params=params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        nhits = data['nhits']
+        logger.info(f"Dataset {dataset} has {nhits} records.")
+    except Exception as e:
+        logger.error(f"Failed to get nhits for {dataset}: {e}")
+        session.close()
+        return fetch_csv_download(dataset, save_as) if dataset == "les-arbres" else pd.DataFrame()
+
+    if dataset == "les-arbres":
+        cache = {'start': 0}
+        if os.path.exists(CACHE_FILE):
+            try:
+                with open(CACHE_FILE, 'r') as f:
+                    cache = json.load(f)
+                logger.info(f"Resuming les-arbres from start={cache['start']}")
+            except Exception as e:
+                logger.error(f"Failed to read {CACHE_FILE}: {e}. Starting from scratch.")
+                cache = {'start': 0}
+        start = cache['start']
+        all_records = []
+        if start > 0 and os.path.exists(save_as):
+            all_records = pd.read_csv(save_as).to_dict('records')
+            logger.info(f"Loaded {len(all_records)} records from existing {save_as}")
+    else:
+        all_records = []
+        start = 0
+        if facets:
+            params["facet"] = facets
+        params['rows'] = rows
+
+    # Stop API fetching at start=9000 due to 10000 limit
+    if dataset == "les-arbres" and start >= 9000:
+        logger.info(f"Switching to CSV download for {dataset} due to API limit at start={start}")
+        session.close()
+        return fetch_csv_download(dataset, save_as)
+
+    session_count = start
+    while start < nhits and start < 9000:  # Cap at 9000 to avoid API limit
+        if session_count >= 5000:
+            session.close()
+            session = requests.Session()
+            logger.info(f"Reset session for {dataset} at start={start}")
+            session_count = 0
+
+        if dataset == "les-arbres" and parallel:
+            chunk_size = rows * 2  # 2 workers
+            starts = list(range(start, min(start + chunk_size, min(nhits, 9000)), rows))
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                futures = [executor.submit(fetch_chunk, dataset, s, rows, session) for s in starts]
+                chunk_records = []
+                any_error = False
+                for future in futures:
+                    records, error = future.result()
+                    if error:
+                        any_error = True
+                        logger.error(f"Chunk error at start={start}: {error}")
+                    chunk_records.extend(records)
+                if any_error:
+                    logger.info(f"Switching to CSV download for {dataset} due to chunk errors")
+                    session.close()
+                    return fetch_csv_download(dataset, save_as)
+                all_records.extend(chunk_records)
+                session_count += len(chunk_records)
+                start += chunk_size
+                if not chunk_records:
+                    logger.error(f"No records fetched for chunk at start={start}. Switching to CSV download.")
+                    if all_records:
+                        df = pd.json_normalize(all_records)
+                        df.to_csv(save_as, index=False)
+                        with open(CACHE_FILE, 'w') as f:
+                            json.dump({'start': start}, f)
+                        logger.warning(f"Partial data ({len(df)} records) saved to {save_as}")
+                        session.close()
+                        return fetch_csv_download(dataset, save_as)
+        else:
+            params['start'] = start
+            params['rows'] = min(rows, nhits - start)
+            for attempt in range(5):
+                try:
+                    response = session.get(url, params=params, timeout=30)
+                    response.raise_for_status()
+                    data = response.json()
+                    records = data['records']
+                    logger.info(f"Fetched {len(records)} records for {dataset} at start={start}")
+                    all_records.extend(records)
+                    start += params['rows']
+                    session_count += params['rows']
+                    time.sleep(0.2)
+                    break
+                except Exception as e:
+                    logger.error(f"API fetch failed for {dataset} at start={start} (attempt {attempt+1}/5): {e} - {response.text if 'response' in locals() else 'No response'}")
+                    if attempt == 4:
+                        if all_records:
+                            df = pd.json_normalize(all_records)
+                            df.to_csv(save_as, index=False)
+                            if dataset == "les-arbres":
+                                with open(CACHE_FILE, 'w') as f:
+                                    json.dump({'start': start}, f)
+                            logger.warning(f"Partial data ({len(df)} records) saved to {save_as}")
+                            session.close()
+                            return fetch_csv_download(dataset, save_as) if dataset == "les-arbres" else pd.DataFrame()
+                    time.sleep(2)
+            if len(records) < params['rows']:
+                break
+
+        if dataset == "les-arbres" and len(all_records) >= 5000:
+            df = pd.json_normalize(all_records)
+            df.to_csv(save_as, index=False)
+            with open(CACHE_FILE, 'w') as f:
+                json.dump({'start': start}, f)
+            logger.info(f"Incremental save: {len(df)} records to {save_as}")
+
+    df = pd.json_normalize(all_records)
+    df.to_csv(save_as, index=False)
+    if dataset == "les-arbres" and os.path.exists(CACHE_FILE):
+        os.remove(CACHE_FILE)
+        logger.info(f"Deleted {CACHE_FILE}")
+    logger.info(f"Fetched {len(df)} records into {save_as} via API.")
+    session.close()
+    if dataset == "les-arbres" and len(df) < nhits:
+        logger.info(f"API fetched only {len(df)} of {nhits} records. Fetching remaining via CSV download.")
+        return fetch_csv_download(dataset, save_as)
     return df
+
+# Dataset-specific fetches
+def fetch_trees():
+    return fetch_from_paris_api(
+        "les-arbres",
+        "data/raw_trees.csv",
+        rows=1000,
+        parallel=True
+    )
+
+def fetch_green_spaces():
+    return fetch_from_paris_api(
+        "espaces_verts",
+        "data/raw_green_spaces.csv",
+        rows=1000,
+        facets=["type_espace", "arrondissement"]
+    )
+
+def fetch_air_quality():
+    return fetch_from_paris_api(
+        "qualite-de-l-air-indice-atmo",
+        "data/raw_air_quality.csv",
+        rows=1000,
+        facets=["date_ech", "code_qual"]
+    )
+
+def fetch_cooling_spaces():
+    facets = ["arrondissement", "ouvert_24h", "horaires_periode", "statut_ouverture", "canicule_ouverture", "ouverture_estivale_nocturne", "type"]
+    return fetch_from_paris_api(
+        "ilots-de-fraicheur-espaces-verts-frais",
+        "data/raw_cooling_spaces.csv",
+        rows=1000,
+        facets=facets
+    )
+
+def fetch_arrondissements():
+    return fetch_from_paris_api(
+        "arrondissements",
+        "data/raw_arrondissements.csv",
+        rows=100,
+        facets=["c_ar"]
+    )
 
 if __name__ == "__main__":
     fetch_trees()
@@ -89,5 +229,4 @@ if __name__ == "__main__":
     fetch_air_quality()
     fetch_cooling_spaces()
     fetch_arrondissements()
-    fetch_airparif_measurements()
-    print("All data fetched and exported to CSV.")
+    logger.info("All datasets fetched and exported to CSV.")
