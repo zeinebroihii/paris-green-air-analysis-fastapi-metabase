@@ -207,25 +207,48 @@ def process_air_quality():
 
 def process_cooling_spaces():
     try:
-        # Read cooling spaces data
-        cool_df = pd.read_csv('data/raw_cooling_spaces.csv', encoding='utf-8')
+        # Read cooling spaces data (assuming JSON format matching the provided record)
+        # If data is in CSV, adjust the loading mechanism accordingly
+        try:
+            with open('data/raw_cooling_spaces.json', 'r', encoding='utf-8') as f:
+                raw_data = json.load(f)
+        except FileNotFoundError:
+            logger.warning("data/raw_cooling_spaces.json not found. Attempting to read data/raw_cooling_spaces.csv")
+            cool_df = pd.read_csv('data/raw_cooling_spaces.csv', encoding='utf-8')
+            # Convert CSV to JSON-like structure if necessary
+            raw_data = cool_df.to_dict('records')
+        
+        logger.info(f"Cooling spaces data loaded: {len(raw_data)} records")
+        
+        # Convert to DataFrame
+        cool_df = pd.DataFrame(raw_data)
         logger.info(f"Cooling spaces columns: {cool_df.columns.tolist()}")
-        logger.info(f"fields.arrondissement type: {cool_df['fields.arrondissement'].dtype}")
         
         # Normalize arrondissement
         def normalize_cooling_arrondissement(x):
             if pd.isna(x):
+                logger.warning(f"Missing arrondissement value in record")
                 return None
             try:
-                x = int(float(x))  # Handle float values like 1.0
-                if 1 <= x <= 20:
-                    return f"750{x:02d}"
+                x = str(x).strip()
+                if x.startswith('750') and x[3:5].isdigit() and 1 <= int(x[3:5]) <= 20:
+                    return x[:5]
+                # Handle integer or float values (e.g., 75017.0)
+                x_int = int(float(x))
+                if 75001 <= x_int <= 75020:
+                    return f"{x_int:05d}"
+                logger.warning(f"Invalid arrondissement value: {x}")
                 return None
             except (ValueError, TypeError):
-                logger.warning(f"Invalid arrondissement value in cooling spaces: {x}")
+                logger.warning(f"Invalid arrondissement value: {x}")
                 return None
         
-        cool_df['arrondissement'] = cool_df['fields.arrondissement'].apply(normalize_cooling_arrondissement)
+        # Apply normalization to the 'fields.arrondissement' column
+        if 'fields.arrondissement' in cool_df.columns:
+            cool_df['arrondissement'] = cool_df['fields.arrondissement'].apply(normalize_cooling_arrondissement)
+        else:
+            logger.error("Column 'fields.arrondissement' not found in cooling spaces data")
+            return pd.DataFrame()
         
         # Filter for valid Paris arrondissements
         valid_arrondissements = [f"750{i:02d}" for i in range(1, 21)]
@@ -235,12 +258,16 @@ def process_cooling_spaces():
         # Count cooling spaces per arrondissement
         cooling_counts = cool_df.groupby('arrondissement').size().reset_index(name='cooling_space_count')
         
-        # Ensure all 20 arrondissements
+        # Ensure all 20 arrondissements are included
         all_arrondissements = pd.DataFrame({'arrondissement': valid_arrondissements})
         cooling_spaces = all_arrondissements.merge(cooling_counts, on='arrondissement', how='left').fillna({'cooling_space_count': 0})
         
         # Convert counts to integers
         cooling_spaces['cooling_space_count'] = cooling_spaces['cooling_space_count'].astype(int)
+        
+        # Log non-zero counts to verify
+        non_zero_counts = cooling_spaces[cooling_spaces['cooling_space_count'] > 0][['arrondissement', 'cooling_space_count']]
+        logger.info(f"Arrondissements with cooling spaces: {non_zero_counts.to_dict('records')}")
         
         # Save to CSV
         output_path = 'data/processed/processed_cooling_spaces.csv'
@@ -323,6 +350,8 @@ if __name__ == "__main__":
     process_trees()
     process_green_spaces()
     process_air_quality()
-    process_cooling_spaces()
+    cooling_spaces = process_cooling_spaces()
     process_arrondissements()
     logger.info("All data processed and saved to data/processed/")
+    # Log final cooling spaces output for verification
+    logger.info(f"Final cooling spaces counts: {cooling_spaces[['arrondissement', 'cooling_space_count']].to_dict('records')}")
