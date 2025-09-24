@@ -61,9 +61,14 @@ def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=Fals
         nhits = data['nhits']
         logger.info(f"Dataset {dataset} has {nhits} records.")
     except Exception as e:
-        logger.error(f"Failed to get nhits for {dataset}: {e}")
+        logger.error(f"Failed to get nhits for {dataset}: {e}. Attempting CSV download.")
         session.close()
-        return fetch_csv_download(dataset, save_as) if dataset == "les-arbres" else pd.DataFrame()
+        return fetch_csv_download(dataset, save_as)
+
+    if dataset == "les-arbres" and nhits > 9000:
+        logger.info(f"Switching to CSV download for {dataset} due to large dataset ({nhits} records)")
+        session.close()
+        return fetch_csv_download(dataset, save_as)
 
     if dataset == "les-arbres":
         cache = {'start': 0}
@@ -87,14 +92,8 @@ def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=Fals
             params["facet"] = facets
         params['rows'] = rows
 
-    # Stop API fetching at start=9000 due to 10000 limit
-    if dataset == "les-arbres" and start >= 9000:
-        logger.info(f"Switching to CSV download for {dataset} due to API limit at start={start}")
-        session.close()
-        return fetch_csv_download(dataset, save_as)
-
     session_count = start
-    while start < nhits and start < 9000:  # Cap at 9000 to avoid API limit
+    while start < nhits:
         if session_count >= 5000:
             session.close()
             session = requests.Session()
@@ -102,8 +101,8 @@ def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=Fals
             session_count = 0
 
         if dataset == "les-arbres" and parallel:
-            chunk_size = rows * 2  # 2 workers
-            starts = list(range(start, min(start + chunk_size, min(nhits, 9000)), rows))
+            chunk_size = rows * 2
+            starts = list(range(start, min(start + chunk_size, nhits), rows))
             with ThreadPoolExecutor(max_workers=2) as executor:
                 futures = [executor.submit(fetch_chunk, dataset, s, rows, session) for s in starts]
                 chunk_records = []
@@ -129,8 +128,8 @@ def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=Fals
                         with open(CACHE_FILE, 'w') as f:
                             json.dump({'start': start}, f)
                         logger.warning(f"Partial data ({len(df)} records) saved to {save_as}")
-                        session.close()
-                        return fetch_csv_download(dataset, save_as)
+                    session.close()
+                    return fetch_csv_download(dataset, save_as)
         else:
             params['start'] = start
             params['rows'] = min(rows, nhits - start)
@@ -147,8 +146,9 @@ def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=Fals
                     time.sleep(0.2)
                     break
                 except Exception as e:
-                    logger.error(f"API fetch failed for {dataset} at start={start} (attempt {attempt+1}/5): {e} - {response.text if 'response' in locals() else 'No response'}")
+                    logger.error(f"API fetch failed for {dataset} at start={start} (attempt {attempt+1}/5): {e}")
                     if attempt == 4:
+                        logger.info(f"API failed after 5 attempts for {dataset}. Switching to CSV download.")
                         if all_records:
                             df = pd.json_normalize(all_records)
                             df.to_csv(save_as, index=False)
@@ -156,8 +156,8 @@ def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=Fals
                                 with open(CACHE_FILE, 'w') as f:
                                     json.dump({'start': start}, f)
                             logger.warning(f"Partial data ({len(df)} records) saved to {save_as}")
-                            session.close()
-                            return fetch_csv_download(dataset, save_as) if dataset == "les-arbres" else pd.DataFrame()
+                        session.close()
+                        return fetch_csv_download(dataset, save_as)
                     time.sleep(2)
             if len(records) < params['rows']:
                 break
@@ -176,7 +176,7 @@ def fetch_from_paris_api(dataset, save_as, rows=1000, facets=None, parallel=Fals
         logger.info(f"Deleted {CACHE_FILE}")
     logger.info(f"Fetched {len(df)} records into {save_as} via API.")
     session.close()
-    if dataset == "les-arbres" and len(df) < nhits:
+    if len(df) < nhits:
         logger.info(f"API fetched only {len(df)} of {nhits} records. Fetching remaining via CSV download.")
         return fetch_csv_download(dataset, save_as)
     return df
@@ -203,7 +203,7 @@ def fetch_air_quality():
         "qualite-de-l-air-indice-atmo",
         "data/raw_air_quality.csv",
         rows=1000,
-        facets=["date_ech", "code_qual"]
+        facets=["indice", "date_ech"]
     )
 
 def fetch_cooling_spaces():
