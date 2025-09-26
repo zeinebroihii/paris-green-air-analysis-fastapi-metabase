@@ -1,8 +1,10 @@
-## Paris Green-Air Analysis (FastAPI + DevOps)
+# Paris Green-Air Analysis (FastAPI + DevOps)
 
 Automated open-data pipeline to explore **green spaces, air quality, and urban cooling in Paris**.  
 Data flows from public APIs → automated processing & spatial analysis → PostgreSQL/PostGIS → FastAPI API → interactive visualizations.  
 This project provides a 2025 baseline for the post-2024 Olympics green legacy, offering insights for sustainable urban planning.
+
+---
 
 ## Project Structure
 paris-green-air-analysis-fastapi-metabase/
@@ -11,7 +13,7 @@ paris-green-air-analysis-fastapi-metabase/
 │   ├── database.py        # DB session & engine
 │   └── requirements.txt   # Python dependencies
 ├── data/                  # Raw & processed exports (CSV, ignored in git)
-│   ├── processed/         # Processed data (joined tables with csv form)
+│   ├── processed/         # Processed data (joined tables with CSV form)
 │   └── raw/               # Raw data files (CSV from APIs)
 ├── images/                # Auto-generated chart images
 ├── scripts/               # ETL mini-algorithms
@@ -26,11 +28,10 @@ paris-green-air-analysis-fastapi-metabase/
 ├── .gitignore             # Ignores large files, env, venv
 ├── docker-compose.yml     # Orchestrates DB + FastAPI
 ├── Dockerfile             # FastAPI container
-├── Dockerfile.app         # Application Container
+├── Dockerfile.app         # Application container
 ├── .github/workflows/     # GitHub Actions CI/CD pipeline
 │   └── ci-cd.yml          # Automates testing and Docker builds
 ├── README.md              # This file
-
 
 ## Quick Start : 
 ## note : the project can be cloned and run it locally and can be acccessed through heroku deployment website 
