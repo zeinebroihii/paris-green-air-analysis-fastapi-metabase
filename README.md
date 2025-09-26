@@ -34,9 +34,10 @@ paris-green-air-analysis-fastapi-metabase/
 ├── README.md              # This file
 
 
-## Quick Start
+## Quick Start : 
+## note : the project can be cloned and run it locally and can be acccessed through heroku deployment website 
 
-### 1. Clone & Setup
+### 1. Clone & Setup (lcoal running )
 ```bash
 git clone https://github.com/zeinebroihii/paris-green-air-analysis-fastapi-metabase.git
 cd paris-green-air-analysis-fastapi-metabase
