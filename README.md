@@ -1,10 +1,8 @@
-markdown# Paris Green-Air Analysis (FastAPI + DevOps)
+## Paris Green-Air Analysis (FastAPI + DevOps)
 
 Automated open-data pipeline to explore **green spaces, air quality, and urban cooling in Paris**.  
 Data flows from public APIs → automated processing & spatial analysis → PostgreSQL/PostGIS → FastAPI API → interactive visualizations.  
 This project provides a 2025 baseline for the post-2024 Olympics green legacy, offering insights for sustainable urban planning.
-
----
 
 ## Project Structure
 paris-green-air-analysis-fastapi-metabase/
