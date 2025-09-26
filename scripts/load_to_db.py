@@ -10,11 +10,9 @@ import io
 import json
 from dotenv import load_dotenv
 
-# Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Load environment variables
 load_dotenv()
 DB_PARAMS = {
     'dbname': os.getenv('POSTGRES_DB'),
@@ -33,7 +31,6 @@ FILE_PATHS = {
     'cooling_spaces_counts': 'data/processed/processed_cooling_spaces.csv'
 }
 
-# Ensure output directory exists
 os.makedirs('data/processed', exist_ok=True)
 
 def list_tables(engine):
