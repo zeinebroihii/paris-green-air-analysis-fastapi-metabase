@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paris Environment Insights | Futuristic Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-neon: #00ff9f;
+            --secondary-neon: #00d4ff;
+            --accent-pink: #ff6b35;
+            --accent-purple: #7209b7;
+            --dark-bg: #0a0a0a;
+            --card-bg: rgba(17, 17, 17, 0.9);
+            --text-light: #ffffff;
+            --text-secondary: #b0b0b0;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text-light);
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 159, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+            animation: pulseBackground 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseBackground {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--primary-neon);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+            box-shadow: 0 0 10px var(--primary-neon);
+        }
+
+        .particle:nth-child(even) {
+            background: var(--secondary-neon);
+            box-shadow: 0 0 10px var(--secondary-neon);
+            animation-duration: 8s;
+        }
+
+        .particle:nth-child(3n) {
+            background: var(--accent-pink);
+            box-shadow: 0 0 10px var(--accent-pink);
+            animation-duration: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+            25% { transform: translateY(-20px) translateX(10px) rotate(90deg); }
+            50% { transform: translateY(0px) translateX(-10px) rotate(180deg); }
+            75% { transform: translateY(20px) translateX(5px) rotate(270deg); }
+        }
+
+        .main-header {
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+            background: linear-gradient(45deg, rgba(0, 255, 159, 0.1) 0%, rgba(0, 212, 255, 0.1) 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 159, 0.3);
+            margin-bottom: 3rem;
+        }
+
+        .main-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 6rem);
+            font-weight: 900;
+            background: linear-gradient(45deg, var(--primary-neon), var(--secondary-neon), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(0, 255, 159, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+            position: relative;
+        }
+
+        .main-title::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--primary-neon), transparent);
+            animation: slideIn 2s ease-out;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            margin-bottom: 2rem;
+            animation: fadeInUp 1s ease-out 0.5s both;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 30px rgba(0, 255, 159, 0.5); }
+            to { text-shadow: 0 0 50px rgba(0, 255, 159, 0.8), 0 0 60px rgba(0, 212, 255, 0.6); }
+        }
+
+        @keyframes slideIn {
+            from { width: 0; }
+            to { width: 100px; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 0 2rem;
+            margin-bottom: 4rem;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            animation: slideInCard 0.8s ease-out both;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        .stat-card:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes slideInCard {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.8s;
+        }
+
+        .stat-card:hover::before {
+            left: 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 255, 159, 0.3);
+            border-color: var(--primary-neon);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            color: var(--primary-neon);
+            margin-bottom: 1rem;
+            display: block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--secondary-neon);
+            margin-bottom: 0.5rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.5s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 25px 50px rgba(0, 255, 159, 0.2);
+            border-color: var(--primary-neon);
+        }
+
+        .chart-header {
+            padding: 2rem 2rem 1rem;
+            background: linear-gradient(135deg, rgba(0, 255, 159, 0.1), rgba(0, 212, 255, 0.1));
+            position: relative;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-title i {
+            color: var(--primary-neon);
+            font-size: 1.2rem;
+        }
+
+        .chart-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .chart-content {
+            padding: 1rem 2rem 2rem;
+            text-align: center;
+        }
+
+        .chart-image {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .chart-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 255, 159, 0.3);
+        }
+
+        .view-fullsize {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.8rem 2rem;
+            background: linear-gradient(45deg, var(--primary-neon), var(--secondary-neon));
+            color: var(--dark-bg);
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 255, 159, 0.3);
+        }
+
+        .view-fullsize:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 255, 159, 0.5);
+            background: linear-gradient(45deg, var(--secondary-neon), var(--accent-pink));
+        }
+
+        .data-endpoints {
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 3rem;
+            margin: 4rem 0;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-endpoints::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-neon), var(--secondary-neon), var(--accent-pink));
+            animation: shimmer 2s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-neon);
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-neon), var(--secondary-neon));
+            border-radius: 2px;
+        }
+
+        .endpoint-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            list-style: none;
+        }
+
+        .endpoint-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem 2rem;
+            border: 1px solid rgba(0, 255, 159, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .endpoint-item:hover {
+            background: rgba(0, 255, 159, 0.1);
+            border-color: var(--primary-neon);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 255, 159, 0.2);
+        }
+
+        .endpoint-link {
+            color: var(--secondary-neon);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .endpoint-link:hover {
+            color: var(--primary-neon);
+        }
+
+        .footer-info {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(17, 17, 17, 0.9));
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 255, 159, 0.3);
+            margin-top: 4rem;
+        }
+
+        .footer-text {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .highlight {
+            color: var(--primary-neon);
+            font-weight: 600;
+        }
+
+        /* Loading animation for images */
+        .loading-placeholder {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(90deg, rgba(0, 255, 159, 0.1) 25%, rgba(0, 212, 255, 0.1) 50%, rgba(0, 255, 159, 0.1) 75%);
+            background-size: 200% 100%;
+            animation: loading 2s infinite;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .main-title {
+                font-size: 3rem;
+            }
+            
+            .stat-card, .chart-card {
+                margin: 0 1rem;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+                padding: 0 1rem;
+            }
+        }
+
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating Particles Background -->
+    <div class="floating-particles">
+        <div class="particle" style="left: 10%; top: 20%; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 20%; top: 80%; animation-delay: 1s;"></div>
+        <div class="particle" style="left: 60%; top: 30%; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 80%; top: 70%; animation-delay: 3s;"></div>
+        <div class="particle" style="left: 40%; top: 10%; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 90%; top: 40%; animation-delay: 5s;"></div>
+        <div class="particle" style="left: 30%; top: 90%; animation-delay: 1.5s;"></div>
+        <div class="particle" style="left: 70%; top: 60%; animation-delay: 2.5s;"></div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="main-header">
+        <h1 class="main-title">PARIS ENV. 2025</h1>
+        <p class="subtitle">Advanced Environmental Intelligence Dashboard</p>
+    </header>
+
+    <!-- Statistics Overview -->
+    <section class="stats-overview">
+        <div class="stat-card">
+            <i class="fas fa-wind stat-icon"></i>
+            <div class="stat-value">[Loading...]</div>
+            <div class="stat-label">Avg Air Quality Index</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-leaf stat-icon"></i>
+            <div class="stat-value">[Loading...]</div>
+            <div class="stat-label">Total Green Area (km²)</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-tree stat-icon"></i>
+            <div class="stat-value">[Loading...]</div>
+            <div class="stat-label">Avg Tree Density</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-snowflake stat-icon"></i>
+            <div class="stat-value">[Loading...]</div>
+            <div class="stat-label">Top Cooling District</div>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-seedling stat-icon"></i>
+            <div class="stat-value">[Loading...]</div>
+            <div class="stat-label">Avg Space Area (km²)</div>
+        </div>
+    </section>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard-container">
+        <div class="charts-grid">
+            <!-- Green Spaces Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Green Spaces Availability
+                    </h3>
+                    <p class="chart-description">
+                        <strong>Objective:</strong> Identify arrondissements with the most/least green spaces to highlight potential overpopulation or verdure gaps. Critical for urban planning and sustainability assessment.
+                    </p>
+                </div>
+                <div class="chart-content">
+                    <img src="/api/green-spaces-chart" alt="Green Spaces Chart" class="chart-image" 
+                         onerror="this.parentElement.innerHTML='<div class=&quot;loading-placeholder&quot;><i class=&quot;fas fa-chart-bar&quot; style=&quot;font-size: 3rem; color: var(--primary-neon);&quot;></i><br>Loading Chart...</div>'">
+                    <a href="/api/green-spaces-chart" target="_blank" class="view-fullsize">
+                        <i class="fas fa-expand"></i> View Full Size
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tree Density vs Green Spaces -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-project-diagram"></i>
+                        Tree Density vs Green Spaces
+                    </h3>
+                    <p class="chart-description">
+                        <strong>Objective:</strong> Understand correlation between green space size and tree density, identifying optimal areas for strategic tree planting initiatives and ecological enhancement.
+                    </p>
+                </div>
+                <div class="chart-content">
+                    <img src="/api/tree-density-vs-green-spaces" alt="Tree Density Chart" class="chart-image"
+                         onerror="this.parentElement.innerHTML='<div class=&quot;loading-placeholder&quot;><i class=&quot;fas fa-project-diagram&quot; style=&quot;font-size: 3rem; color: var(--secondary-neon);&quot;></i><br>Loading Chart...</div>'">
+                    <a href="/api/tree-density-vs-green-spaces" target="_blank" class="view-fullsize">
+                        <i class="fas fa-expand"></i> View Full Size
+                    </a>
+                </div>
+            </div>
+
+            <!-- Cooling Spaces Distribution -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-snowflake"></i>
+                        Cooling Spaces Distribution
+                    </h3>
+                    <p class="chart-description">
+                        <strong>Objective:</strong> Map cooling infrastructure across arrondissements to identify climate resilience gaps and optimize heat island mitigation strategies.
+                    </p>
+                </div>
+                <div class="chart-content">
+                    <img src="/api/cooling-spaces-chart" alt="Cooling Spaces Chart" class="chart-image"
+                         onerror="this.parentElement.innerHTML='<div class=&quot;loading-placeholder&quot;><i class=&quot;fas fa-snowflake&quot; style=&quot;font-size: 3rem; color: var(--accent-pink);&quot;></i><br>Loading Chart...</div>'">
+                    <a href="/api/cooling-spaces-chart" target="_blank" class="view-fullsize">
+                        <i class="fas fa-expand"></i> View Full Size
+                    </a>
+                </div>
+            </div>
+
+            <!-- Air Quality Trend -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fas fa-wind"></i>
+                        Air Quality Evolution
+                    </h3>
+                    <p class="chart-description">
+                        <strong>Objective:</strong> Track temporal air quality trends to assess environmental policy effectiveness and predict future atmospheric conditions for public health planning.
+                    </p>
+                </div>
+                <div class="chart-content">
+                    <img src="/api/air-quality-trend" alt="Air Quality Trend Chart" class="chart-image"
+                         onerror="this.parentElement.innerHTML='<div class=&quot;loading-placeholder&quot;><i class=&quot;fas fa-wind&quot; style=&quot;font-size: 3rem; color: var(--accent-purple);&quot;></i><br>Loading Chart...</div>'">
+                    <a href="/api/air-quality-trend" target="_blank" class="view-fullsize">
+                        <i class="fas fa-expand"></i> View Full Size
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Endpoints Section -->
+        <section class="data-endpoints">
+            <h2 class="section-title">
+                <i class="fas fa-database"></i>
+                Raw Data Access
+            </h2>
+            <ul class="endpoint-list">
+                <li class="endpoint-item">
+                    <a href="/api/data/air_quality" target="_blank" class="endpoint-link">
+                        <i class="fas fa-wind"></i>
+                        Air Quality Dataset (JSON)
+                    </a>
+                </li>
+                <li class="endpoint-item">
+                    <a href="/api/data/green_spaces.csv" target="_blank" class="endpoint-link">
+                        <i class="fas fa-file-csv"></i>
+                        Green Spaces Data (CSV)
+                    </a>
+                </li>
+                <li class="endpoint-item">
+                    <a href="/health" target="_blank" class="endpoint-link">
+                        <i class="fas fa-heartbeat"></i>
+                        System Health Check
+                    </a>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-info">
+        <p class="footer-text">
+            <span class="highlight">Advanced Environmental Analytics</span> • Real-time data visualization with AI-powered insights • 
+            <span class="highlight">Post-2024 Olympics Sustainability Assessment</span> • 
+            Powered by cutting-edge data science and modern web technologies • 
+            <span class="highlight">Paris Green Legacy Initiative 2025</span>
+        </p>
+    </footer>
+
+    <script>
+        // Add dynamic particle generation
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 6 + 's';
+            document.querySelector('.floating-particles').appendChild(particle);
+            
+            // Remove particle after animation
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 12000);
+        }
+
+        // Generate particles periodically
+        setInterval(createParticle, 3000);
+
+        // Add smooth scrolling and intersection observer for animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Smooth reveal animation on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animation = 'fadeInUp 0.8s ease-out both';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe chart cards
+            document.querySelectorAll('.chart-card').forEach(card => {
+                observer.observe(card);
+            });
+
+            // Add click effects to cards
+            document.querySelectorAll('.chart-card, .stat-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // Create ripple effect
+                    const ripple = document.createElement('div');
+                    ripple.style.position = 'absolute';
+                    ripple.style.borderRadius = '50%';
+                    ripple.style.background = 'rgba(0, 255, 159, 0.3)';
+                    ripple.style.transform = 'scale(0)';
+                    ripple.style.animation = 'ripple 0.6s linear';
+                    ripple.style.left = (e.clientX - card.offsetLeft - 50) + 'px';
+                    ripple.style.top = (e.clientY - card.offsetTop - 50) + 'px';
+                    ripple.style.width = '100px';
+                    ripple.style.height = '100px';
+                    ripple.style.pointerEvents = 'none';
+                    
+                    card.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+
+            // Auto-refresh images every 30 seconds
+            setInterval(() => {
+                document.querySelectorAll('.chart-image').forEach(img => {
+                    const src = img.src;
+                    img.src = '';
+                    img.src = src + '?t=' + Date.now();
+                });
+            }, 1000000);
+        });
+
+        // Add ripple animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

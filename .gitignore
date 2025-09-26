@@ -10,6 +10,4 @@ data/*.geojson
 
 # Environment
 .env
-.env.example
-.metabase/
-metabase/application.db
+

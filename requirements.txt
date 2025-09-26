@@ -1,0 +1,12 @@
+pandas
+psycopg2-binary
+sqlalchemy
+geoalchemy2
+shapely
+python-dotenv
+fastapi==0.111.0
+uvicorn==0.30.1
+python-dotenv==1.0.1
+pandas==2.2.2
+matplotlib==3.9.2
+seaborn==0.13.2
