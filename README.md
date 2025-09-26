@@ -99,7 +99,7 @@ Cooling Spaces vs Tree Density: Assess if tree density enhances cooling space ef
 Green Spaces vs Vegetation Proxy: Verify if more green spaces correlate with higher vegetation coverage for planning purposes.
 
 
-DevOps with GitHub Actions
+DevOps with GitHub Actions ( initiation for devops automation deployment displays in later stages.. )
 CI/CD Pipeline
 
 Workflow: .github/workflows/ci-cd.yml automates linting, Docker builds, vulnerability scans, and data processing.
@@ -108,9 +108,9 @@ Steps:
 
 Checkout code.
 Set up Python 3.9 and install dependencies.
-Lint with Pylint.
 Run automated ETL scripts (fetch_data.py, process_data.py, load_to_db.py).
-Build Docker image.
+Build Docker images.
+Push Docker images
 
 
 Setup
