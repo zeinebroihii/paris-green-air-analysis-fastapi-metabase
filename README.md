@@ -1,132 +1,133 @@
-# paris-green-air-analysis-fastapi-metabase# Paris Green-Air Analysis (FastAPI + Metabase)
+markdown# Paris Green-Air Analysis (FastAPI + DevOps)
 
-End-to-end open-data pipeline to explore **green spaces, air quality, and urban cooling in Paris**.  
-Data flows from public APIs → processing & spatial analysis → PostgreSQL/PostGIS → FastAPI API → interactive Metabase dashboards.
+Automated open-data pipeline to explore **green spaces, air quality, and urban cooling in Paris**.  
+Data flows from public APIs → automated processing & spatial analysis → PostgreSQL/PostGIS → FastAPI API → interactive visualizations.  
+This project provides a 2025 baseline for the post-2024 Olympics green legacy, offering insights for sustainable urban planning.
 
 ---
 
-##  Project Structure
-
-```
+## Project Structure
 paris-green-air-analysis-fastapi-metabase/
-├── data/                  # Raw & processed exports (CSV/JSON, ignored in git)
+├── app/                   # FastAPI backend
+│   ├── main.py            # API endpoints with 4 charts and statistics
+│   ├── database.py        # DB session & engine
+│   └── requirements.txt   # Python dependencies
+├── data/                  # Raw & processed exports (CSV, ignored in git)
+│   ├── processed/         # Processed data (joined tables with csv form)
+│   └── raw/               # Raw data files (CSV from APIs)
+├── images/                # Auto-generated chart images
 ├── scripts/               # ETL mini-algorithms
 │   ├── fetch_data.py      # API fetch + scraping fallback
 │   ├── process_data.py    # Cleaning, joins, stats
 │   └── load_to_db.py      # Load processed data into PostGIS
-├── app/                   # FastAPI backend
-│   ├── main.py            # API endpoints
-│   ├── models.py          # SQLAlchemy + Pydantic models
-│   ├── database.py        # DB session & engine
-│   └── requirements.txt   # Python dependencies
-├── metabase/              # Optional: exported dashboard configs / sample SQL
-│   └── setup.sql
-├── static/                # Optional: HTML to embed Metabase dashboards
-│   └── dashboard.html
+├── static/                # Static files
+│   └── index.html         # Dashboard with chart objectives
+├── venv/                  # Virtual environment (ignored in git)
+├── .env                   # Environment variables (copy from .env.example)
+├── .env.example           # Example env vars template
+├── .gitignore             # Ignores large files, env, venv
+├── docker-compose.yml     # Orchestrates DB + FastAPI
 ├── Dockerfile             # FastAPI container
-├── docker-compose.yml     # Orchestrates DB + FastAPI + Metabase
-├── .env.example           # Env vars (DB creds, Metabase admin)
-├── .gitignore
-├── README.md
-└── analysis_report.md     # Insights, screenshots, findings
-```
+├── Dockerfile.app         # Application Container
+├── .github/workflows/     # GitHub Actions CI/CD pipeline
+│   └── ci-cd.yml          # Automates testing and Docker builds
+├── README.md              # This file
 
----
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone & Setup
 ```bash
 git clone https://github.com/zeinebroihii/paris-green-air-analysis-fastapi-metabase.git
 cd paris-green-air-analysis-fastapi-metabase
-cp .env.example .env   # update credentials if needed
-```
-
-### 2. Run with Docker
-```bash
-docker-compose up -d
-```
+cp .env.example .env   # update credentials if needed 
+2. Run with Docker-compose locally containers will be launched in your Docker-desktop
+bash docker-compose up -d --build
 This spins up:
-- **PostGIS DB** (`db` service, port 5432)
-- **FastAPI API** (`fastapi` service, port 8000)
-- **Metabase** (`metabase` service, port 3000)
 
-### 3. Fetch & Process Data
-Inside the container or host environment:
-```bash
-python scripts/fetch_data.py
-python scripts/process_data.py
-python scripts/load_to_db.py
-```
-This downloads open data, cleans/joins, and loads it into PostGIS.
+PostGIS DB (db service, port 5432)
+FastAPI API (fastapi service, port 8000)
+Application itself that will load instantly the processed dat into your DB
 
-### 4. Explore
-- FastAPI Swagger UI: **http://localhost:8000/docs**
-- Metabase UI: **http://localhost:3000**
+3. Explore
 
----
+FastAPI Dashboard: http://localhost:8000
+API Docs: http://localhost:8000/docs
 
-## 🛡️ Components
+Note: Data processing and loading are automated via GitHub Actions on dev and main pushes.
 
-| Layer          | Tech & Purpose                                                                                  |
-|----------------|--------------------------------------------------------------------------------------------------|
-| **ETL**        | `requests`, `BeautifulSoup`, `pandas`, `geopandas` to fetch Paris Open Data & Airparif APIs.      |
-| **Database**   | PostgreSQL + PostGIS for spatial joins & analytics.                                              |
-| **Backend**    | FastAPI serves JSON endpoints and optional HTML dashboard embeds.                                |
-| **Visualization** | Metabase for interactive maps, correlations, and reports.                                     |
-| **Deployment** | Docker & docker-compose with health checks and 12-factor env configuration.                      |
+🛡️ Components
 
----
+LayerTech & PurposeETLrequests, pandas, geopandas to fetch Paris Open Data & process spatially (automated).DatabasePostgreSQL + PostGIS for spatial joins & analytics.
+BackendFastAPI serves JSON endpoints and HTML dashboard with 4 charts.
+VisualizationMatplotlib charts embedded in FastAPI.
+DevOpsGitHub Actions for CI/CD (linting, Docker builds,and data automation).
 
-## Development
+Languages & Frameworks
 
-Local run without Docker:
-```bash
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r app/requirements.txt
-uvicorn app.main:app --reload
-```
+Python: Core language for ETL scripts, backend, and data processing.
+Pandas: Data manipulation and analysis.
+Geopandas: Spatial data handling and joins.
+Requests: API data fetching.
+Matplotlib: Visualization of charts.
 
----
-
-## 📊 Example Analysis
-
-- Tree density vs. NO₂ correlation per arrondissement.
-- Green space coverage vs. particulate matter (PM2.5) levels.
-- Cooling-space accessibility.
-
-(See **analysis_report.md** for findings and Metabase screenshots.)
-
----
+FastAPI: Modern, high-performance web framework for the API and dashboard.
+PostgreSQL/PostGIS: Relational database with spatial extensions for geospatial analysis.
+Docker: Containerization for consistent deployment.
+GitHub Actions: CI/CD automation for testing, building, and deployment.
 
 
-Copy `.env.example` to `.env` and fill in:
-```
-POSTGRES_USER=user
-POSTGRES_PASSWORD=pass
-MB_ADMIN_EMAIL=admin@example.com
-MB_ADMIN_PASSWORD=123456
-DATABASE_URL=postgresql://user:pass@db:5432/paris_data
-```
+Development
+Branching Strategy
 
----
+dev: For ongoing development and experiments.
+main: For production-ready code.
+Merging: After testing on dev, merge to main:
 
-
-- **Branching:** `main` for production, `dev` for experiments.  
-- **Commits:** Conventional messages (`feat:`, `fix:`, `docs:`…).  
-- **Data:** Large raw files (>10 MB) are `.gitignore`d.  
-- **Monitoring:** Docker healthchecks for DB & Metabase.  
-- **Reproducibility:** Export Metabase dashboards to `metabase/` for versioning.
-
----
+Push changes to dev: git push origin dev
+Create a Pull Request (PR) in GitHub: Go to "Pull requests" → "New pull request" → Compare dev with main.
+Review and merge: Ensure GitHub Actions CI/CD passes, then merge dev into main.
 
 
-- [ ] Add automated cron job to refresh datasets.
-- [ ] Expand API endpoints (e.g., geo-filtered queries).
-- [ ] Deploy to cloud (Render/Heroku/VM) with SSL.
+📊 Chart Objectives
 
----
+Green Spaces Availability: Identify arrondissements with the most/least green spaces to highlight potential overpopulation or verdure gaps.
+Tree Density vs Green Spaces: Understand if larger green spaces correlate with higher tree density, identifying areas needing tree planting.
+Tree Density vs Air Quality: Test if higher tree density improves air quality, supporting post-2024 sustainability insights.
+Cooling Spaces by Arrondissement: Identify well-equipped arrondissements for cooling during heatwaves, detecting vulnerable areas.
+Cooling Spaces vs Tree Density: Assess if tree density enhances cooling space effectiveness, aiding urban cooling strategies.
+Green Spaces vs Vegetation Proxy: Verify if more green spaces correlate with higher vegetation coverage for planning purposes.
 
-**Author:** Zeineb
 
+DevOps with GitHub Actions
+CI/CD Pipeline
+
+Workflow: .github/workflows/ci-cd.yml automates linting, Docker builds, vulnerability scans, and data processing.
+Triggers: On push to dev/main or pull requests.
+Steps:
+
+Checkout code.
+Set up Python 3.9 and install dependencies.
+Lint with Pylint.
+Run automated ETL scripts (fetch_data.py, process_data.py, load_to_db.py).
+Build Docker image.
+
+
+Setup
+
+Secrets:
+
+Go to repo → Settings → Secrets and variables → Actions.
+Add:
+
+DOCKERHUB_USERNAME: Your Docker Hub username.
+DOCKERHUB_TOKEN: Docker Hub access token (create at Docker Hub → Security → New Access Token).
+
+
+Update ci-cd.yml with your IMAGE_NAME (e.g., zeinebroihii/fastapi-environment-app).
+Commit and push: git add .github/workflows/ci-cd.yml && git commit -m "Add CI/CD pipeline" && git push origin dev.
+
+
+
+Author
+Zeineb
