@@ -1,0 +1,5 @@
+datasetid,recordid,record_timestamp,fields.ind_jour_qa_moyenne,fields.ind_jour_qa_extremement_mauvaise,fields.ind_jour_qa_tres_mauvaise,fields.ind_jour_qa_degradee,fields.annee,fields.ind_jour_qa_bonne,fields.ind_jour_qa_mauvaise
+
+qualite-de-l-air-indice-atmo,b6d3395ef17caa5db69f8e76efc18e460bc0787b,2025-01-22T10:33:49.273Z,281,0,0,55,2021,5,24
+qualite-de-l-air-indice-atmo,69db1f48783f6940de48c08a37dad7d6b4bcec04,2025-01-22T10:33:49.273Z,253,0,1,64,2022,3,43
+qualite-de-l-air-indice-atmo,77806637c0c716dcb12c759cdd6c7627783cde33,2025-01-22T10:33:49.273Z,281,0,2,51,2023,5,25
