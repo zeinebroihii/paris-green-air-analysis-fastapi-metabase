@@ -8,6 +8,6 @@ venv/
 data/*.csv
 data/*.geojson
 
-# Environment
+# Environment variables
 .env
 
