@@ -1,0 +1,54 @@
+name: CI/CD Pipeline for Paris Green-Air Analysis
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: roihizeineb123/paris-environement  
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r app/requirements.txt
+
+    - name: Lint with Pylint
+      run: |
+        pylint app/main.py
+
+    - name: Build Docker images
+      run: |
+        docker build -t ${REGISTRY}/${IMAGE_NAME}:latest -f Dockerfile .
+        docker build -t ${REGISTRY}/${IMAGE_NAME}-app:latest -f Dockerfile.app .
+
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/dev')
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push Docker images to Docker Hub
+      if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/dev')
+      run: |
+        docker push ${REGISTRY}/${IMAGE_NAME}:latest
+        docker push ${REGISTRY}/${IMAGE_NAME}-app:latest
